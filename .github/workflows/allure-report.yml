@@ -1,19 +1,62 @@
-name: allure-report
-
+name: CI
 on:
-  release:
-    types:
-      - created
   push:
-    branches-ignore:
-      - '!master'
+    branches: [ "main" ]
+jobs:
+  cypress-run:
+    name: Generate Allure Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.2
+      - name: Cypress.io
+        uses: cypress-io/github-action@v4.2.0
+        with:
+          start: npm test
+        env:
+          CYPRESS_email: ${{secrets.EMAIL}}
+          CYPRESS_password: ${{secrets.PASSWORD}}
+
+#       - name: Get Allure history
+#         uses: actions/checkout@v2
+#         if: always()
+#         continue-on-error: true
+#         with:
+#           ref: gh-pages
+#           path: gh-pages
+
+      - name: Allure Report action from marketplace
+        uses: simple-elf/allure-report-action@v1.1
+        if: always()
+        #id: allure-report
+        with:
+          allure_results: allure-results
+          #gh_pages: gh-pages
+          #allure_report: allure-report
+          allure_history: allure-history
+      
+
 
 jobs:
-  allure:
+  autotests:
     name: Generate Allure Report
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14'
+
+      - name: Install dependencies
+        if: always()
+        run: |
+          npm install
+      - name: Run Test
+        if: always()
+        run: npm test
+        continue-on-error: true
 
       - name: Get Allure history
         uses: actions/checkout@v2
@@ -24,7 +67,7 @@ jobs:
           path: gh-pages
 
       - name: Allure Report action from marketplace
-        uses: simple-elf/allure-report-action@master
+        uses: simple-elf/allure-report-action@v1.1
         if: always()
         #id: allure-report
         with:
@@ -32,7 +75,6 @@ jobs:
           #gh_pages: gh-pages
           #allure_report: allure-report
           allure_history: allure-history
-          keep_reports: 20
 
       - name: Deploy report to Github Pages
         if: always()
